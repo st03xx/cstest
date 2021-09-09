@@ -6,3 +6,11 @@ add_executable(
     cstest
     main.cpp
 )
+
+if (UNIX)
+target_link_libraries(
+    cstest
+    dl
+    pthread
+)
+endif (UNIX)
