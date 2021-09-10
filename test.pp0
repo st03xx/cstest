@@ -1,5 +1,5 @@
 0;0;0;0;0;Pruefplan;testplan________;001;Stöckmann;Serienprüfung;EPC;div.;10.06.21 09:47:51;10.06.21 08:45:10;1;14434;20.0;;0;0;0;KEINE;0;0;0;0;0;0;0;26;Admin_(ad);0;0;0;0;0;0;0;bar;b;res;
-1;1;1;0;1;Vorgabe;NOTAUS/ENDE Definition;;1 + V01;0;0;0;0;0;0;0;0;0;0;0;0;KEINE;1;1;1;0;0;0;0;;16;0;0;"2 Signale ";0;Unbenutzt;1;1;bar;b;res;
+1;1;1;0;1;Vorgabe;NOTAUS/ENDE Definition;;1 + P01;0;0;0;0;0;0;0;0;0;0;0;0;KEINE;1;1;1;0;0;0;0;;16;0;0;"2 Signale ";0;Unbenutzt;1;1;bar;b;res;
 2;2;1;0;41;TDMS;;;1;255;0;15;0;15;0;0;0;0;0;0;0;KEINE;0;0;0;0;0;0;0;1;2;3;4;1;1;1;1;0;bar;b;res;
 3;3;1;0;18;NOT-AUS;;;25;1;1;0;KEINE;0;0;0;0;0;0;0;0;KEINE;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;bar;b;res;
 4;1;2;0;1;Vorgabe;Prüfstand entlüften;;0;0;0;0;0;0;0;0;0;0;0;0;0;KEINE;1;1;1;0;0;0;0;;0;0;0;0;0;Unbenutzt;1;1;bar;b;res;

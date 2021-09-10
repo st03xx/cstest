@@ -1,5 +1,6 @@
 #include <chaiscript/chaiscript.hpp>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -130,13 +131,10 @@ public:
         return getFieldValue(7);
     }
     // Val1
-    unsigned long getVal1() {
-        std::string s{getFieldValue(8)};
-        chaiscript::ChaiScript chai;
-        chai.add(chaiscript::var<int>(33), "P01");
-        auto r = chai.eval(s);
-        
-        return chai.boxed_cast<int>(r);
+    std::string getVal1() {
+        // std::string s{getFieldValue(8)};
+        // return std::stoi(s);
+        return getFieldValue(8);
     }
     // Val2
     unsigned long getVal2() {
@@ -153,6 +151,10 @@ public:
         std::string s{getFieldValue(11)};
         return std::stoi(s);
     }
+    std::string getVar(unsigned int i) {
+        // V, P, K verarbeiten
+        return getFieldValue(12+i-1);
+    }
 };
 
 // map<Blockname, Script>
@@ -168,12 +170,13 @@ std::map<std::string, std::string> readIni(const std::string& fileName)
         if (line.find("[") == 0) { // [] gefunden
             std::vector<std::string> fields = split(line, ';');
             std::string blockName{fields[0].erase(0, 1)};
-            std::string script;
             while (std::getline(ifs, line)) {
                 trim(line);
                 if (line.find("//{") != std::string::npos) {
+                    std::string script = "{\n";
                     while (std::getline(ifs, line)) {
                         if (line.find("//}") != std::string::npos) {
+                            script += "}";
                             map[blockName] = script;
                             break;
                         }
@@ -203,17 +206,62 @@ std::vector<Fields> readPP0(const std::string& fileName)
     return lines;
 }
 
+struct Param {
+    float value;
+    std::string unit;
+    std::string comment;
+};
+
+std::vector<Param> readPL0(const std::string& fileName)
+{
+    std::ifstream ifs(fileName);
+    std::string chunk((std::istreambuf_iterator<char>(ifs)),
+        std::istreambuf_iterator<char>());
+
+    std::vector<Param> lines;
+    std::vector<std::string> l{split(chunk, '\n')};
+
+    int i{0};
+
+    for (auto ll : l) {
+        if (i == 0) {
+            // erste Zeile überlesen
+            ++i;
+            continue;
+        }
+        std::vector<std::string> ps = split(ll, ';');
+        if (ps.size() < 4) {
+            continue;
+        }
+        std::stringstream ss{ps.at(0)};
+        float f;
+        ss >> f;
+        lines.push_back({f, ps.at(1), ps.at(2)});
+    }
+    return lines;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " ini-file pp0-file pl0-file" << std::endl;
         return -1;
     }
 
+    std::locale::global( std::locale( "" ) );
+
     std::map<std::string, std::string> chaiFunctions = readIni(argv[1]);
     std::vector<Fields> lines = readPP0(argv[2]);
-
+    std::vector<Param> params = readPL0(argv[3]);
 
     chaiscript::ChaiScript chai;
+
+    for (unsigned int i = 0; i < params.size(); ++i) {
+        std::stringstream ss;
+        ss << "P" << std::setfill('0') << std::setw(2) << i+1;
+        float f = params.at(i).value;
+        chai.add(chaiscript::var(f), ss.str());
+    }
 
     chai.add(chaiscript::user_type<Command>(), "Cmd");
     chai.add(chaiscript::fun(&Command::module), "module");
@@ -244,13 +292,19 @@ int main(int argc, char *argv[])
     chai.add(chaiscript::user_type<Fields>(), "Line");
     chai.add(chaiscript::fun(&Fields::getFieldValue), "get");
 
+    chai.add_global_const(chaiscript::const_var(0.0), "KEINE");
+
+    auto state = chai.get_state();
+
     try {
         int lineNr{0};
+        std::string endBlockLabel;
 
         for (auto line : lines) {
             ++lineNr;
             if (lineNr == 1) {
                 // Prüfplan Kopfzeile
+                endBlockLabel = line.getFieldValue(29);
                 continue;
             }
             struct Command cmd{0, 0, 0, 0 ,0 ,0 ,0, 0, 0, 0, 0 ,0 ,0 ,0, 0, 0, 0, 0 ,0 ,0 ,0};
@@ -259,7 +313,17 @@ int main(int argc, char *argv[])
             if (cmd.module == 0) {
                 throw std::runtime_error("E: Test plan (" + std::to_string(lineNr)+"): Block type == 0!");
             }
-            cmd.val1 = line.getVal1();
+            chai.add(chaiscript::type_conversion<int, float>());
+
+            cmd.var1 = chai.eval<float>(line.getVar(1));
+            cmd.var2 = chai.eval<float>(line.getVar(2));
+            cmd.var3 = chai.eval<float>(line.getVar(3));
+            cmd.var4 = chai.eval<float>(line.getVar(4));
+            cmd.var5 = chai.eval<float>(line.getVar(5));
+            cmd.var6 = chai.eval<float>(line.getVar(6));
+            cmd.var7 = chai.eval<float>(line.getVar(7));
+            cmd.var8 = chai.eval<float>(line.getVar(8));
+            cmd.var9 = chai.eval<float>(line.getVar(9));
 
             chai.set_global(chaiscript::var(&line), "Line");
             chai.set_global(chaiscript::var(&cmd), "Cmd");
@@ -272,8 +336,8 @@ int main(int argc, char *argv[])
             } catch (std::exception& e) {
                 std::cerr << "Error in block definition: " << line.getBlockName() << std::endl;
                 std::cerr << e.what() << std::endl;
-                continue;
             }
+            chai.set_state(state);
         }
     } catch(const std::exception& e) {
         std::cerr << e.what() << std::endl;
